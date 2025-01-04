@@ -33,7 +33,7 @@ def iddaa_bilgi(basla,son):
                 iyskor.append("Veri Yok")
             iddiakod.append(str(r[i].get("iddaaCode")))
 
-        veri=pd.DataFrame({"Tarih":tarih_list,"Maç":mac,"Skor":skor,"İY Skor":iyskor,
+        veri=pd.DataFrame({"Tarih":tarih_list,"Maç":mac,"İY Skor":iyskor,"Skor":skor,
                              "İddia Kodu":iddiakod,"ID":id})
 
         veri=veri[veri["İddia Kodu"] != "None"]
@@ -80,8 +80,8 @@ def get_bahis_oranlari(i,tarih,mac,skor,iyskor):
         bahis_df=pd.DataFrame(list(bahis_sozluk.items()),columns=["Bahis Türü","Oran"])
         bahis_df["Tarih"]=tarih
         bahis_df["Maç"]=mac
-        bahis_df["Skor"]=skor
         bahis_df["İY Skor"]=iyskor
+        bahis_df["Skor"]=skor
         bahis_df["Oran"]=bahis_df["Oran"].apply(lambda x: str(x).replace('.', ','))
 
         return bahis_df
@@ -92,20 +92,20 @@ def get_bahis_oranlari(i,tarih,mac,skor,iyskor):
 def iddaa_bahis_oranlari(basla, son):
     ids=iddaa_bilgi(basla,son)["ID"]
     mac=iddaa_bilgi(basla,son)["Maç"]
-    skor=iddaa_bilgi(basla,son)["Skor"]
     iyskor=iddaa_bilgi(basla,son)["İY Skor"]
+    skor=iddaa_bilgi(basla,son)["Skor"]
     tarih=iddaa_bilgi(basla,son)["Tarih"]
 
     tum_bahis_df=pd.DataFrame()
 
     with ThreadPoolExecutor() as executor:
-        futures=[executor.submit(get_bahis_oranlari,i,tarih.iloc[idx],mac.iloc[idx],skor.iloc[idx],iyskor.iloc[idx]) for idx, i in enumerate(ids)]
+        futures=[executor.submit(get_bahis_oranlari,i,tarih.iloc[idx],mac.iloc[idx],iyskor.iloc[idx],skor.iloc[idx]) for idx, i in enumerate(ids)]
         for future in futures:
             bahis_df=future.result()
             if bahis_df is not None:
                 tum_bahis_df=pd.concat([tum_bahis_df, bahis_df],ignore_index=True)
 
-    tum_bahis_df=tum_bahis_df[["Tarih","Maç","Skor","İY Skor","Bahis Türü","Oran"]]
+    tum_bahis_df=tum_bahis_df[["Tarih","Maç","İY Skor","Skor","Bahis Türü","Oran"]]
     tum_bahis_df.to_excel("bahis_oranlari.xlsx",index=False)
 
 
