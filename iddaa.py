@@ -27,7 +27,7 @@ def iddaa_bilgi(basla,son):
             score=f"{r[i]['score'].get('home')}-{r[i]['score'].get('away')}"
             skor.append(score)
             try:
-                iy_skor=f"{r[i]['score']['ht'].get("home")}-{r[i]['score']['ht'].get("away")}"
+                iy_skor=f"{r[i]['score']['ht'].get('home')}-{r[i]['score']['ht'].get('away')}"
                 iyskor.append(iy_skor)
             except AttributeError:
                 iyskor.append("Veri Yok")
