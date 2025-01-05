@@ -39,7 +39,9 @@ def iddaa_bilgi(basla,son):
         veri=veri[veri["İddia Kodu"] != "None"]
         veri.drop("İddia Kodu",axis=1,inplace=True)
 
-        veri["Tarih"]=pd.to_datetime(veri["Tarih"],unit="ms")
+        veri["Tarih"]=pd.to_datetime(veri["Tarih"],unit="ms",utc=True)
+        veri["Tarih"]=veri["Tarih"].dt.tz_convert("Europe/Istanbul")
+        veri["Saat"]=veri["Tarih"].dt.strftime("%H:%M")
         veri["Tarih"]=veri["Tarih"].dt.strftime("%d-%m-%Y")
         veri.reset_index(drop=True,inplace=True)
 
@@ -48,7 +50,7 @@ def iddaa_bilgi(basla,son):
     return tum_veri
 
 
-def get_bahis_oranlari(i,tarih,mac,skor,iyskor):
+def get_bahis_oranlari(i,tarih,saat,mac,skor,iyskor):
     url=f"https://www.mackolik.com/mac/gaziantep-fk-vs-pendikspor/iddaa/{i}"
     r=scraper.get(url).text
     s=BeautifulSoup(r,"html.parser")
@@ -79,6 +81,7 @@ def get_bahis_oranlari(i,tarih,mac,skor,iyskor):
 
         bahis_df=pd.DataFrame(list(bahis_sozluk.items()),columns=["Bahis Türü","Oran"])
         bahis_df["Tarih"]=tarih
+        bahis_df["Saat"]=saat
         bahis_df["Maç"]=mac
         bahis_df["İY Skor"]=iyskor
         bahis_df["Skor"]=skor
@@ -95,19 +98,20 @@ def iddaa_bahis_oranlari(basla, son):
     iyskor=iddaa_bilgi(basla,son)["İY Skor"]
     skor=iddaa_bilgi(basla,son)["Skor"]
     tarih=iddaa_bilgi(basla,son)["Tarih"]
+    saat=iddaa_bilgi(basla,son)["Saat"]
 
     tum_bahis_df=pd.DataFrame()
 
     with ThreadPoolExecutor() as executor:
-        futures=[executor.submit(get_bahis_oranlari,i,tarih.iloc[idx],mac.iloc[idx],iyskor.iloc[idx],skor.iloc[idx]) for idx, i in enumerate(ids)]
+        futures=[executor.submit(get_bahis_oranlari,i,tarih.iloc[idx],saat.iloc[idx],mac.iloc[idx],iyskor.iloc[idx],skor.iloc[idx]) for idx, i in enumerate(ids)]
         for future in futures:
             bahis_df=future.result()
             if bahis_df is not None:
                 tum_bahis_df=pd.concat([tum_bahis_df, bahis_df],ignore_index=True)
 
-    tum_bahis_df=tum_bahis_df[["Tarih","Maç","İY Skor","Skor","Bahis Türü","Oran"]]
+    tum_bahis_df=tum_bahis_df[["Tarih","Saat","Maç","İY Skor","Skor","Bahis Türü","Oran"]]
     tum_bahis_df.to_excel("bahis_oranlari.xlsx",index=False)
 
 
 # Tarihleri yıl-ay-gün şeklinde giriniz
-iddaa_bahis_oranlari("2024-12-31","2024-12-31")
+iddaa_bahis_oranlari("2024-12-30","2024-12-30")
